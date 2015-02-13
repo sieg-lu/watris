@@ -5,6 +5,8 @@ public class SceneManager : MonoBehaviour {
 	public Camera mainCamera;
 	public GameObject unitBasePrefab;
 	public GameObject unitBlockPrefab;
+	// public GameObject testBlockPrefab;
+	public BlockManager blockManager;
 	public int lengthOfSideInUnit = 5;
 	public int maxHeightInUnit = 10;
 	public float fallingTimeIntervalMilli = 1000.0f;
@@ -40,37 +42,40 @@ public class SceneManager : MonoBehaviour {
 
 	void Update() {
 		if (currentBlock != null) {
-			if (Input.GetKeyUp(KeyCode.W)) {
-				currentBlock.transform.position += zStepVector;
-				if (!GameLogic.Instance.IsValidPosition(currentBlock.transform.position)) {
-					currentBlock.transform.position -= zStepVector;
+			if (Input.GetKeyUp(KeyCode.E)) {
+				currentBlock.transform.Rotate(new Vector3(0, 90, 0));
+				if (!GameLogic.Instance.IsValidPosition(currentBlock.transform)) {
+					currentBlock.transform.Rotate(new Vector3(0, -90, 0));
 				}
+			}
+			if (Input.GetKeyUp(KeyCode.W)) {
+				TryMove(zStepVector);
 			}
 			if (Input.GetKeyUp(KeyCode.S)) {
-				currentBlock.transform.position -= zStepVector;
-				if (!GameLogic.Instance.IsValidPosition(currentBlock.transform.position)) {
-					currentBlock.transform.position += zStepVector;
-				}
+				TryMove(-zStepVector);
 			}
 			if (Input.GetKeyUp(KeyCode.A)) {
-				currentBlock.transform.position -= xStepVector;
-				if (!GameLogic.Instance.IsValidPosition(currentBlock.transform.position)) {
-					currentBlock.transform.position += xStepVector;
-				}
+				TryMove(-xStepVector);
 			}
 			if (Input.GetKeyUp(KeyCode.D)) {
-				currentBlock.transform.position += xStepVector;
-				if (!GameLogic.Instance.IsValidPosition(currentBlock.transform.position)) {
-					currentBlock.transform.position -= xStepVector;
-				}
+				TryMove(xStepVector);
 			}
 			if (Input.GetKey(KeyCode.Space)) {
 				currentBlock.transform.position -= yStepVector;
-				if (!GameLogic.Instance.IsFallable(currentBlock.transform.position)) {
+				if (!GameLogic.Instance.IsFallable(currentBlock.transform)) {
 					currentBlock.transform.position += yStepVector;
 				}
 			}
 		}
+	}
+
+	protected bool TryMove(Vector3 step) {
+		currentBlock.transform.position += step;
+		if (!GameLogic.Instance.IsValidPosition(currentBlock.transform)) {
+			currentBlock.transform.position -= step;
+			return false;
+		}
+		return true;
 	}
 
 	protected IEnumerator TimerTickEvent() {
@@ -85,15 +90,17 @@ public class SceneManager : MonoBehaviour {
 				}
 			}
 			currentBlock.transform.position -= yStepVector;
-			if (!GameLogic.Instance.IsFallable(currentBlock.transform.position)) {
+			if (!GameLogic.Instance.IsFallable(currentBlock.transform)) {
+				GameLogic.Instance.MarkBlock(currentBlock.transform);
 				currentBlock = null;
 			}
 		}
 	}
 
 	protected bool SpawnFallingBlock() {
-		currentBlock = (GameObject)Instantiate(unitBlockPrefab, blockSpawnPosition, Quaternion.identity);
-		return GameLogic.Instance.IsFallable(currentBlock.transform.position);
+		// currentBlock = (GameObject)Instantiate(testBlockPrefab, blockSpawnPosition, Quaternion.identity);
+		currentBlock = blockManager.GetNextBlock(blockSpawnPosition);
+		return GameLogic.Instance.IsFallable(currentBlock.transform);
 	}
 
 	protected void InitCameraPosition() {
